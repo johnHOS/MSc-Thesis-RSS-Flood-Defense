@@ -31,7 +31,8 @@ def _vertical_load(hgwl, q_surcharge, factored=True):
 # Horizontal earth pressure load  F_H  [kN/m]
 
 def _horizontal_load(phi_deg: float, hgwl: float,
-                     case: str = "operational") -> tuple[float, float]:
+                     case: str = "operational",
+                     q_surcharge: float = 0.0) -> tuple[float, float]:
     """
     Compute total net horizontal load F_H [kN/m] and its effective lever arm
     z_arm [m] measured from the base of the structure.
@@ -59,7 +60,7 @@ def _horizontal_load(phi_deg: float, hgwl: float,
 
     # --- Earth pressure resultants ---
     # Unsaturated zone: triangular, acts at d2 + d1/3 from base
-    F1     = 0.5 * Ka * P.gamma_fill     * d1**2
+    F1     = 0.5 * Ka * P.gamma_fill * d1**2
     z1     = d2 + d1 / 3
 
     # Saturated zone, rectangular part (overburden from unsaturated zone)
@@ -84,13 +85,22 @@ def _horizontal_load(phi_deg: float, hgwl: float,
         F_w_ext = 0.0
         z_wext  = 0.0
 
+
+    F_surch = Ka * q_surcharge * (d1 + d2)
+    z_surch = (d1 + d2) / 2.0
+
+
+
+
+
+
     # --- Total net horizontal force and weighted lever arm ---
-    F_H = F1 + F2r + F2t + F_w_in - F_w_ext
+    F_H = F1 + F2r + F2t + F_w_in + F_surch - F_w_ext
 
     # Weighted lever arm (avoid division by zero if F_H ≈ 0)
     if abs(F_H) > 1e-6:
         M_total = (F1*z1 + F2r*z2r + F2t*z2t
-                   + F_w_in*z_win - F_w_ext*z_wext)
+                   + F_w_in*z_win + F_surch*z_surch - F_w_ext*z_wext)
         z_arm = M_total / F_H
     else:
         z_arm = P.H / 3   # fallback
@@ -115,7 +125,8 @@ def lsf_bearing(X):
     q_surcharge = X[3]
 
     Vd = _vertical_load(hgwl, q_surcharge, factored=False)
-    F_H, z_arm = _horizontal_load(phi_deg, hgwl, case="operational")
+    F_H, z_arm = _horizontal_load(phi_deg, hgwl, case="operational",
+                                  q_surcharge=q_surcharge)
 
     e = abs(F_H * z_arm) / Vd
     A_prime = max(P.B - 2.0 * e, 0.0)   # effective foundation width [m/m]
@@ -125,12 +136,17 @@ def lsf_bearing(X):
     #   i_c = 0.5 * (1 - sqrt(1 - F_H / (A_prime * s_u))),
     # this adopted multiplier is eta_H = 1 - i_c. This is not the full
     # ISO 19901-4 bearing-capacity formulation.
+
     denom = A_prime * s_u
     ratio = min(F_H / denom, 1.0) if denom > 0 else 1.0
     eta_H = 0.5 * (1.0 + np.sqrt(max(1.0 - ratio, 0.0)))
-    #eta_H = 1
 
-    q_ult     = P.N_c * s_u * eta_H      # simplified ultimate bearing pressure [kPa]
+
+
+
+
+    q0 = max(P.gamma_clay - P.gamma_w, 0.0) * P.d_emb
+    q_ult     = P.N_c * s_u * eta_H  + q0   # simplified ultimate bearing pressure [kPa]
     R_bearing = A_prime * q_ult             # bearing resistance [kN/m]
 
     Z = (R_bearing - Vd) / Vd
@@ -138,6 +154,59 @@ def lsf_bearing(X):
 
 
 # %%
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 def lsf_sliding(X, case: str = "operational"):
     """
     X[0] : tan_phi     [-]        – tan(phi') of the sand, load AND resistance
@@ -149,7 +218,7 @@ def lsf_sliding(X, case: str = "operational"):
     phi_deg = np.degrees(np.arctan(tan_phi))
 
     V   = _vertical_load(hgwl, q_surcharge, factored=False)
-    F_H = _horizontal_load(phi_deg, hgwl, case=case)[0]
+    F_H = _horizontal_load(phi_deg, hgwl, case=case, q_surcharge=q_surcharge)[0]
     R_H = theta_R * V * P.f_ds * tan_phi
 
     return [(R_H - F_H) / P.H]
@@ -176,7 +245,7 @@ def lsf_rotation(X, case: str = "operational"):
     q_surcharge = X[2]
 
     Vd         = _vertical_load(hgwl, q_surcharge, factored=False)
-    F_H, z_arm = _horizontal_load(phi_deg, hgwl, case=case)
+    F_H, z_arm = _horizontal_load(phi_deg, hgwl, case=case, q_surcharge=q_surcharge)
 
     M_dest = F_H * z_arm                # destabilising moment [kNm/m]
     M_stab = Vd * (P.B / 2.0)           # stabilising moment [kNm/m]
@@ -231,7 +300,7 @@ def unity_checks_external(phi_deg:  float = 32.5,
     # ===========================================================================
     # OPERATIONAL CASE  (external lake water at h_winter opposes internal pressure)
     # ===========================================================================
-    F_H_op, z_arm_op = _horizontal_load(phi_d_deg, hgwl_val, case="operational")
+    F_H_op, z_arm_op = _horizontal_load(phi_d_deg, hgwl_val, case="operational", q_surcharge=P.q_det)
 
     # --- Bearing capacity (operational only — Vd is maximum here) ---
     e_br       = abs(F_H_op * z_arm_op) / Vd_unfav
@@ -258,7 +327,7 @@ def unity_checks_external(phi_deg:  float = 32.5,
     # ===========================================================================
     # CONSTRUCTION CASE  (no external water — cofferdam in place, no lake pressure)
     # ===========================================================================
-    F_H_con, z_arm_con = _horizontal_load(phi_d_deg, hgwl_val, case="construction")
+    F_H_con, z_arm_con = _horizontal_load(phi_d_deg, hgwl_val, case="construction", q_surcharge=P.q_det)
 
     # --- Sliding (construction) ---
     # R_H_d_con  = Vd * f_d                  # same Vd, same friction coefficient

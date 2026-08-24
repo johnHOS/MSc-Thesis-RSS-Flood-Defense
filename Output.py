@@ -271,7 +271,7 @@ def compute_psf_table(P) -> dict:
     # {mechanism_key: (pf_target_key, {var: (dist, alpha, x_k)})}
     _mechanisms = {
         "toe_stone": ("toe_stone", {
-            "phi_stone": (P.phi_stone, +0.80, xk["phi_stone"]),
+            "phi_stone": (P.phi_stone, +1.00, xk["phi_stone"]),
         }),
         "bearing": ("bearing", {
             "su"    : (P.su,    +0.80, xk["su"]),
@@ -282,31 +282,31 @@ def compute_psf_table(P) -> dict:
         "sliding": ("sliding", {
             "tan_phi": (P.tan_phi, +0.80, xk["tan_phi"]),
             "hgwl"  : (P.hgwl,  -0.70, xk["hgwl"]),
-            "q_sur" : (P.q_sur, +0.40, xk["q_sur_res"]),  # stabilising for sliding
+            "q_sur" : (P.q_sur, +0.32, xk["q_sur_res"]),  # stabilising for sliding
         }),
         "overturning": ("overturning", {
             "tan_phi": (P.tan_phi, +0.80, xk["tan_phi"]),
             "hgwl"  : (P.hgwl,  -0.70, xk["hgwl"]),
-            "q_sur" : (P.q_sur, +0.40, xk["q_sur_res"]),  # stabilising for rotation
+            "q_sur" : (P.q_sur, +0.32, xk["q_sur_res"]),  # stabilising for rotation
         }),
         "sliding_con.": ("sliding", {
             "tan_phi": (P.tan_phi, +0.80, xk["tan_phi"]),
             "hgwl"  : (P.hgwl,  -0.70, xk["hgwl"]),
-            "q_sur" : (P.q_sur, +0.40, xk["q_sur_res"]),
+            "q_sur" : (P.q_sur, +0.32, xk["q_sur_res"]),
         }),
         "overturning_con.": ("overturning", {
             "tan_phi": (P.tan_phi, +0.80, xk["tan_phi"]),
             "hgwl"  : (P.hgwl,  -0.70, xk["hgwl"]),
-            "q_sur" : (P.q_sur, +0.40, xk["q_sur_res"]),
+            "q_sur" : (P.q_sur, +0.32, xk["q_sur_res"]),
         }),
         "rupture": ("rupture", {
-            "tan_phi": (P.tan_phi, +0.40, xk["tan_phi"]),
+            "tan_phi": (P.tan_phi, +0.32, xk["tan_phi"]),
             "Rt"    : (P.Rt,    +0.80, xk["Rt"]),
             "hgwl"  : (P.hgwl,  -0.28, xk["hgwl"]),
             "q_sur" : (P.q_sur, -0.70, xk["q_sur_load"]),
         }),
         "pullout": ("pullout", {
-            "tan_phi": (P.tan_phi, +0.40, xk["tan_phi"]),
+            "tan_phi": (P.tan_phi, +0.32, xk["tan_phi"]),
             "fb"    : (P.fb,    +0.80, xk["fb"]),
             "hgwl"  : (P.hgwl,  -0.28, xk["hgwl"]),
             "q_sur" : (P.q_sur,  0.00, xk["q_sur_load"]),  # inert in pull-out
